@@ -508,13 +508,13 @@ mixed_candidates = true
 date_time_candidates = false # 全拼/双拼下输入 rq / riqi / date、sj / shijian / time、xq / xingqi / week 时，把当前日期、时间、星期混进候选
 date_time_menu = true # 日期时间混入候选时，在第三位放一个「📅日期」入口，选中后候选框换成全部日期格式（与 Shift+T 模式相同）
 unicode_mode = true # Shift+U 进入 Unicode 码位输入模式
-date_time_mode = true # Shift+T 进入日期与时间快捷输入模式
+date_time_mode = true # Shift+T 进入日期与时间快捷输入模式（全拼/双拼/五笔）
 emoji_mode = true # Shift+E 进入 Emoji 快捷输入模式（支持全拼/简拼/双拼/英文）
 kaomoji_mode = true # Shift+M 进入颜文字快捷输入模式（支持全拼/简拼/双拼/英文）
 jianpin_mode = true # Shift+J 进入超级简拼模式（每个字母作为简拼；双拼按方案转换 zh/ch/sh）
 y_mode = true # Shift+Y 进入临时英文模式（中文状态下直接打英文，上屏后回到中文）
 r_mode = true # Shift+R 进入临时日语模式（中文状态下使用罗马字输入日语，上屏后回到中文）
-v_mode = true # V 模式：V 后接数字转中文（V123 → 一百二十三，V123.45 → 壹佰贰拾叁元肆角伍分）或计算算式（V1+2*3 → 7）；双拼用大写 V，全拼大小写均可
+v_mode = true # V 模式：V 后接数字转中文（V123 → 一百二十三，V123.45 → 壹佰贰拾叁元肆角伍分）或计算算式（V1+2*3 → 7）；双拼和五笔用大写 V，全拼大小写均可
 
 #
 # AI Assistant

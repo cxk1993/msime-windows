@@ -44,6 +44,13 @@ class WubiScheme : public IInputScheme
 
     size_t max_code_length() const;
 
+    // The keystrokes as typed, cases included, minus any letter outside the code domain (a z with
+    // mixed input and wildcard off is not a code position and is dropped here too, so a host that
+    // counts this string still sees one entry per code letter). Hosts that drive the session by raw
+    // string (the Server does) read this back to decide T and V mode from the shape of the prefix,
+    // and both prefixes are uppercase -- normalizing them away would leave those decisions with
+    // nothing to match. Queries never see it: they use raw_input_, the normalized code below.
+    std::string raw_input_with_cases_;
     std::string raw_input_;
     std::vector<KeyStroke> key_strokes_;
     bool extended_length_allowed_ = false;

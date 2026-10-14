@@ -18,6 +18,29 @@ bool is_wubi_vk(ImeKeyCode vk, bool mixed_pinyin_allowed, bool z_wildcard)
            is_wubi_letter(static_cast<char>(vk + ('a' - 'A')), mixed_pinyin_allowed, z_wildcard);
 }
 
+// The raw string with cases is what a host reads back to recognise T mode (an uppercase T prefix)
+// and V mode (an uppercase V followed by digits) from its shape. It keeps the case and the
+// non-letter keys those modes type (digits, operators, ':' and '/'), but drops letters outside the
+// code domain exactly as normalize_wubi_code does: with mixed input and z wildcard off, a typed z
+// is not a code position, and keeping it would make the raw string longer than the code. The Server
+// counts the raw string to decide when a four-letter code is complete, so a dropped letter must not
+// count as one.
+std::string normalize_wubi_with_cases(const std::string &input, bool mixed_pinyin_allowed, bool z_wildcard)
+{
+    std::string filtered;
+    filtered.reserve(input.size());
+    for (const unsigned char ch : input)
+    {
+        const bool ascii_letter = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
+        if (ascii_letter && !is_wubi_letter(static_cast<char>(std::tolower(ch)), mixed_pinyin_allowed, z_wildcard))
+        {
+            continue;
+        }
+        filtered.push_back(static_cast<char>(ch));
+    }
+    return filtered;
+}
+
 std::string normalize_wubi_code(const std::string &input, size_t max_length, bool mixed_pinyin_allowed, bool z_wildcard)
 {
     std::string normalized;
@@ -41,6 +64,7 @@ std::string normalize_wubi_code(const std::string &input, size_t max_length, boo
 
 void WubiScheme::reset()
 {
+    raw_input_with_cases_.clear();
     raw_input_.clear();
     key_strokes_.clear();
     extended_length_allowed_ = false;
@@ -50,6 +74,10 @@ void WubiScheme::handle_key(ImeKeyCode vk, ImeModifierMask modifiers_down, ImeCh
 {
     if (vk == ImeKey::Backspace)
     {
+        if (!raw_input_with_cases_.empty())
+        {
+            raw_input_with_cases_.pop_back();
+        }
         if (!raw_input_.empty())
         {
             raw_input_.pop_back();
@@ -74,12 +102,27 @@ void WubiScheme::handle_key(ImeKeyCode vk, ImeModifierMask modifiers_down, ImeCh
 
     key_strokes_.push_back(KeyStroke{vk, modifiers_down, wch});
     raw_input_.push_back(static_cast<char>(vk + ('a' - 'A')));
+    // Same case rule as quanpin: the character the key produced when there is one, otherwise the
+    // key's own letter. Both fields stay in step, so the raw string is always the code as typed.
+    if (wch >= L'A' && wch <= L'Z')
+    {
+        raw_input_with_cases_.push_back(static_cast<char>(wch));
+    }
+    else if (wch >= L'a' && wch <= L'z')
+    {
+        raw_input_with_cases_.push_back(static_cast<char>(wch));
+    }
+    else
+    {
+        raw_input_with_cases_.push_back(static_cast<char>(vk + ('a' - 'A')));
+    }
 }
 
 void WubiScheme::set_raw_input(const std::string &raw_input, const std::string &raw_input_with_cases)
 {
-    raw_input_ = normalize_wubi_code(raw_input_with_cases.empty() ? raw_input : raw_input_with_cases, max_code_length(),
-                                     mixed_pinyin_allowed_, z_wildcard_);
+    raw_input_with_cases_ = normalize_wubi_with_cases(raw_input_with_cases.empty() ? raw_input : raw_input_with_cases,
+                                                      mixed_pinyin_allowed_, z_wildcard_);
+    raw_input_ = normalize_wubi_code(raw_input_with_cases_, max_code_length(), mixed_pinyin_allowed_, z_wildcard_);
     key_strokes_.clear();
 }
 
@@ -108,7 +151,7 @@ QueryRequest WubiScheme::build_request() const
     QueryRequest request;
     request.scheme = type();
     request.raw_input = raw_input_;
-    request.raw_input_with_cases = raw_input_;
+    request.raw_input_with_cases = raw_input_with_cases_;
     request.normalized_input = raw_input_;
     request.raw_segmentation = raw_input_;
     request.normalized_segmentation = raw_input_;

@@ -1028,6 +1028,10 @@ void HandleImeKey(uint64_t client_id, uint64_t activation_epoch, uint64_t reques
     const bool shift_only = (Global::ModifiersDown & 0b00000111u) == 0b00000001u;
     const bool chinese_scheme = g_inputSession && (g_inputSession->current_scheme_type() == SchemeType::Quanpin ||
                                                    g_inputSession->current_scheme_type() == SchemeType::Shuangpin);
+    // T 模式对五笔同样开放，但五笔不能并进 chinese_scheme：那个变量还给 K/U/E/M/J/Y/R 触发与
+    // ShouldLearnEnteredEnglishWord 用，并进去会让五笔连带打开其它本地模式（R7）。
+    const bool date_time_scheme =
+        chinese_scheme || (g_inputSession && g_inputSession->current_scheme_type() == SchemeType::Wubi);
     const bool pinyin_commit =
         FanyImeIpc::IsPinyinCommitKey(Global::Keycode, Global::ModifiersDown) && !input_before_key.empty();
     const bool convert_shuangpin = pinyin_commit && g_inputSession->current_scheme_type() == SchemeType::Shuangpin &&
@@ -1061,7 +1065,7 @@ void HandleImeKey(uint64_t client_id, uint64_t activation_epoch, uint64_t reques
     if (chinese_scheme && !g_english_input_mode && GetConfiguredUnicodeModeEnabled() && input_before_key.empty() &&
         Global::Keycode == 'U' && Global::Wch == L'U' && shift_only)
         g_unicode_mode_triggered = true;
-    if (chinese_scheme && !g_english_input_mode && GetConfiguredDateTimeModeEnabled() && input_before_key.empty() &&
+    if (date_time_scheme && !g_english_input_mode && GetConfiguredDateTimeModeEnabled() && input_before_key.empty() &&
         Global::Keycode == 'T' && Global::Wch == L'T' && shift_only)
         g_date_time_mode_triggered = true;
     if (chinese_scheme && !g_english_input_mode && GetConfiguredEmojiModeEnabled() && input_before_key.empty() &&
@@ -1288,8 +1292,12 @@ void HandleImeKey(uint64_t client_id, uint64_t activation_epoch, uint64_t reques
     // 这一个入口。开关默认开；关掉后组合停在四码上等用户选。两个开关作用在不同的按键上：
     // 本分支只看第四键（落键前 raw 是 3 码），下面的顶字分支只看第五键，第四键上不会互相影响。
     const bool letter_key = Global::Keycode >= 'A' && Global::Keycode <= 'Z';
+    // 特殊模式（T/V 等）的输入串可能恰好归一出四码（`Tdate` → `tdat`），此刻的「四码唯一」
+    // 是模式的形状而不是一次五笔输入，所以自动上屏与顶字一律让路。对五笔来说这个聚合里只有
+    // T/V 可能为真，其余成员各自需要只对全拼/双拼开放的触发标记。
+    const bool special_mode_active = IsSpecialModeCompositionActive(GlobalIme::composition.raw_input_with_cases);
     if (!g_english_input_mode && letter_key &&
-        FanyImeIpc::ShouldAutoCommitCompleteWubiCode(GetConfiguredWubiFourCodeAutoCommit(),
+        FanyImeIpc::ShouldAutoCommitCompleteWubiCode(GetConfiguredWubiFourCodeAutoCommit(), special_mode_active,
                                                      g_inputSession->wubi_unique_four_code(),
                                                      GlobalIme::composition.creating_word.active))
     {
@@ -1341,7 +1349,7 @@ void HandleImeKey(uint64_t client_id, uint64_t activation_epoch, uint64_t reques
     if (!g_english_input_mode && letter_key && raw_length_before_key == kWubiCompleteCodeLength &&
         caret_before_key == raw_length_before_key &&
         FanyImeIpc::ShouldCommitCompleteWubiCodeOnNextKey(
-            GetConfiguredWubiFifthCodeTopCommit(), GetConfiguredWubiMixedPinyin(),
+            GetConfiguredWubiFifthCodeTopCommit(), special_mode_active, GetConfiguredWubiMixedPinyin(),
             g_inputSession->wubi_four_code_is_complete(), /*key_is_letter=*/true, /*caret_at_end=*/true,
             GlobalIme::composition.creating_word.active))
     {

@@ -506,7 +506,8 @@ bool SetConfiguredRModeEnabled(bool enabled);
 // engine/contracts/v_mode_input.h。
 bool GetConfiguredVModeEnabled();
 bool SetConfiguredVModeEnabled(bool enabled);
-// VModeChanged 的载荷："0" 关着或不是全拼/双拼，"1" 双拼（只认大写 V），"2" 全拼（V、v 都认）。
+// VModeChanged 的载荷："0" 关着或不是全拼/双拼/五笔，"1" 双拼或五笔（只认大写 V），
+// "2" 全拼（V、v 都认）。
 std::wstring FormatVModeWorkerPayload();
 bool GetConfiguredClipboardHistoryEnabled();
 bool SetConfiguredClipboardHistoryEnabled(bool enabled);

@@ -3117,6 +3117,60 @@ int run_test()
                 wubi_date_time.local_input_mode() == metasequoia::LocalInputMode::None,
             "Shift+T was swallowed outside a pinyin scheme.");
 
+    // 五笔保留原样串：Server 端的 T/V 形状判定（大写 T 前缀、V＋数字）读的是宿主回读的原样串，
+    // 而五笔码表查询和自动上屏用的是归一后的码。两者必须是同一份输入的两个视图——原样串留全
+    // 用户敲的字符，查询码只留 a–y（混输/通配时含 z）并截断。
+    const std::filesystem::path wubi_raw_directory = data_directory / "wubi-raw";
+    std::filesystem::create_directories(wubi_raw_directory);
+    {
+        Database database(wubi_raw_directory / "msime.db");
+        database.execute("CREATE TABLE wubi86(key TEXT, value TEXT, weight INTEGER)");
+    }
+    set_data_directory(wubi_raw_directory);
+    for (const bool mixed_pinyin : {false, true})
+    {
+        metasequoia::WubiInputOptions wubi_options;
+        wubi_options.mixed_pinyin = mixed_pinyin;
+
+        metasequoia::InputSession v_mode_wubi(SchemeType::Wubi);
+        v_mode_wubi.set_wubi_input_options(wubi_options);
+        v_mode_wubi.set_pinyin_sequence("V1+2");
+        v_mode_wubi.set_pinyin_sequence_with_cases("V1+2");
+        v_mode_wubi.recompute_candidates();
+        require(v_mode_wubi.get_pinyin_sequence_with_cases() == "V1+2" && v_mode_wubi.get_pinyin_sequence() == "v",
+                "Wubi did not keep the raw-case V-mode prefix apart from the query code.");
+
+        metasequoia::InputSession t_mode_wubi(SchemeType::Wubi);
+        t_mode_wubi.set_wubi_input_options(wubi_options);
+        t_mode_wubi.set_pinyin_sequence("T2024/12/25");
+        t_mode_wubi.set_pinyin_sequence_with_cases("T2024/12/25");
+        t_mode_wubi.recompute_candidates();
+        require(t_mode_wubi.get_pinyin_sequence_with_cases() == "T2024/12/25" &&
+                    t_mode_wubi.get_pinyin_sequence() == "t" && t_mode_wubi.preedit() == "t",
+                "Wubi did not keep the raw-case date/time prefix apart from the query code.");
+
+        // 反向保护：普通小写码字两个 getter 逐字节相同，预编辑也照旧。
+        metasequoia::InputSession plain_wubi(SchemeType::Wubi);
+        plain_wubi.set_wubi_input_options(wubi_options);
+        plain_wubi.set_pinyin_sequence("wqaa");
+        plain_wubi.set_pinyin_sequence_with_cases("wqaa");
+        plain_wubi.recompute_candidates();
+        require(plain_wubi.get_pinyin_sequence_with_cases() == "wqaa" && plain_wubi.get_pinyin_sequence() == "wqaa" &&
+                    plain_wubi.preedit() == "wqaa",
+                "A plain wubi code no longer round-trips unchanged.");
+
+        // z 不是码字时（混输与通配都关）必须从原样串里也丢掉：Server 按原样串长度数四码，
+        // 留着它会比码多一格，顶字提前一个键触发。混输开启时 z 是合法码字，照旧保留。
+        metasequoia::InputSession z_wubi(SchemeType::Wubi);
+        z_wubi.set_wubi_input_options(wubi_options);
+        z_wubi.set_pinyin_sequence("wqaz");
+        z_wubi.set_pinyin_sequence_with_cases("wqaz");
+        z_wubi.recompute_candidates();
+        require(z_wubi.get_pinyin_sequence_with_cases() == (mixed_pinyin ? "wqaz" : "wqa") &&
+                    z_wubi.get_pinyin_sequence() == (mixed_pinyin ? "wqaz" : "wqa"),
+                "A dropped wubi z did not stay dropped in the raw-case string.");
+    }
+
     const std::filesystem::path quick_phrase_directory = data_directory / "quick-phrase";
     std::filesystem::create_directories(quick_phrase_directory);
     {
