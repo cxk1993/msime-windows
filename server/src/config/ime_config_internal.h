@@ -240,6 +240,7 @@ extern std::string g_candidate_skin;
 extern std::string g_candidate_window_preedit_style;
 extern bool g_candidate_fixed_badge;
 extern std::string g_candidate_fixed_badge_style;
+extern std::string g_candidate_ai_badge_style;
 extern std::string g_settings_window_linger;
 extern std::string g_theme_mode;
 extern std::string g_theme_settings;

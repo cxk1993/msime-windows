@@ -221,6 +221,8 @@ candidate_window_preedit_shuangpin_quanpin = false
 candidate_fixed_badge = true
 # 固定排位候选词徽标样式，可选："paperclip", "pushpin", "dot"
 candidate_fixed_badge_style = "paperclip"
+# AI 联想候选词的来源徽标样式，可选："robot"（🤖）, "whale"（🐳）
+candidate_ai_badge_style = "robot"
 # TSF 行内预编辑样式，可选："raw", "pinyin", "empty"
 #   raw    -> 原始按键序列
 #   pinyin -> 分词后的拼音序列（Server 回包 Preedit）

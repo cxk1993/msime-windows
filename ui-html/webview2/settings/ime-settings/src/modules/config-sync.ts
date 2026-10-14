@@ -59,6 +59,7 @@ function applyConfigData(data: Record<string, any>, target?: string): void {
           candidate_window_follow_cursor: data?.appearance?.candidate_window_follow_cursor,
           candidate_fixed_badge: data?.appearance?.candidate_fixed_badge,
           candidate_fixed_badge_style: data?.appearance?.candidate_fixed_badge_style,
+          candidate_ai_badge_style: data?.appearance?.candidate_ai_badge_style,
           candidate_window_preedit_shuangpin_quanpin: data?.appearance?.candidate_window_preedit_shuangpin_quanpin,
           tsf_preedit_shuangpin_quanpin: data?.appearance?.tsf_preedit_shuangpin_quanpin,
           ui_backend: data?.appearance?.ui_backend,

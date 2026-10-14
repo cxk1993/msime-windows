@@ -620,6 +620,7 @@ std::wstring BuildConfigMessage(bool refresh_skin_catalog)
             {"candidate_window_preedit_shuangpin_quanpin", GetConfiguredCandidateWindowPreeditShuangpinQuanpin()},
             {"candidate_fixed_badge", GetConfiguredCandidateFixedBadge()},
             {"candidate_fixed_badge_style", GetConfiguredCandidateFixedBadgeStyle()},
+            {"candidate_ai_badge_style", GetConfiguredCandidateAiBadgeStyle()},
             {"tsf_preedit_style", GetConfiguredTsfPreeditStyle()},
             {"tsf_preedit_shuangpin_quanpin", GetConfiguredTsfPreeditShuangpinQuanpin()},
             {"theme_mode", GetConfiguredThemeMode()},
@@ -889,6 +890,8 @@ bool ApplyConfigUpdate(const json::object &data)
         return SetConfiguredCandidateFixedBadge(json::value_to<bool>(data.at("value")));
     if (path == "appearance.candidate_fixed_badge_style")
         return SetConfiguredCandidateFixedBadgeStyle(json::value_to<std::string>(data.at("value")));
+    if (path == "appearance.candidate_ai_badge_style")
+        return SetConfiguredCandidateAiBadgeStyle(json::value_to<std::string>(data.at("value")));
     if (path == "appearance.page_size")
         return SetConfiguredCandidatePageSize(static_cast<int>(data.at("value").as_int64()));
     if (path == "appearance.font")

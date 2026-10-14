@@ -563,6 +563,9 @@ bool GetConfiguredCandidateFixedBadge();
 bool SetConfiguredCandidateFixedBadge(bool enabled);
 const std::string &GetConfiguredCandidateFixedBadgeStyle();
 bool SetConfiguredCandidateFixedBadgeStyle(const std::string &style);
+// AI 联想候选词的来源徽标样式（"robot" | "whale"），出厂 "robot"（🤖）。
+const std::string &GetConfiguredCandidateAiBadgeStyle();
+bool SetConfiguredCandidateAiBadgeStyle(const std::string &style);
 // 设置窗口关闭后隐藏驻留多久再退出进程：
 // "off" | "1m" | "5m" | "10m" | "30m" | "60m" | "forever"，默认 "10m"。
 const std::string &GetConfiguredSettingsWindowLinger();

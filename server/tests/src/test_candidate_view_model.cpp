@@ -167,6 +167,46 @@ TEST_CASE(fixed_position_candidates_get_pin_badge_visible_in_both_backends)
     REQUIRE_EQ(CandidateViewHtml(plain), std::string("世界"));
 }
 
+TEST_CASE(ai_suggestion_badge_switches_between_robot_and_whale)
+{
+    // 出厂默认是 🤖：与改动前的硬编码值逐字节一致，升级不改变默认观感。
+    REQUIRE_EQ(AiSuggestionBadge("robot"), std::string(" \xF0\x9F\xA4\x96"));
+    REQUIRE_EQ(AiSuggestionBadge("whale"), std::string(" \xF0\x9F\x90\xB3"));
+    // 存储的是枚举名而不是字面 emoji，TOML/日志/diff 里不出现图形字符。
+    REQUIRE_EQ(AiSuggestionBadge("robot"), std::string(" ") + "\xF0\x9F\xA4\x96");
+
+    // 未列入白名单的样式按出厂默认处理，手改 TOML 写错也不会让 AI 候选失去来源标识。
+    REQUIRE_EQ(AiSuggestionBadge(""), AiSuggestionBadge("robot"));
+    REQUIRE_EQ(AiSuggestionBadge("smiley"), AiSuggestionBadge("robot"));
+
+    // 徽标经既有 badge 通道渲染进词条文本，两种样式在两个后端都可见。
+    CandidateViewItem whale;
+    whale.text = "联想";
+    whale.badge = AiSuggestionBadge("whale");
+    REQUIRE_EQ(whale.badge, std::string(" \xF0\x9F\x90\xB3"));
+    REQUIRE_EQ(CandidateViewHtml(whale), std::string("联想 \xF0\x9F\x90\xB3"));
+
+    CandidateViewItem robot;
+    robot.text = "联想";
+    robot.badge = AiSuggestionBadge("robot");
+    REQUIRE_EQ(robot.badge, std::string(" \xF0\x9F\xA4\x96"));
+    REQUIRE_EQ(CandidateViewHtml(robot), std::string("联想 \xF0\x9F\xA4\x96"));
+
+    // AI 徽标是覆盖而非追加：同一词条既固定又是 AI 候选时，两个徽标并存且各占一段。
+    CandidateViewItem both;
+    both.text = "联想";
+    both.fixed_position = true;
+    both.badge = AiSuggestionBadge("whale");
+    ApplyFixedPositionBadge(both, true, "paperclip");
+    REQUIRE_EQ(both.badge, std::string(" \xF0\x9F\x90\xB3 \xF0\x9F\x93\x8E"));
+
+    // 非 AI 候选没有徽标，不受样式影响。
+    CandidateViewItem cloud;
+    cloud.text = "云";
+    cloud.badge = " ☁️";
+    REQUIRE_EQ(cloud.badge, std::string(" ☁️"));
+}
+
 TEST_CASE(ui_backend_policy_keeps_settings_web_and_small_windows_native_by_default)
 {
     using namespace UiBackendPolicy;

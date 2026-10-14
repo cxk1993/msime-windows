@@ -195,6 +195,7 @@ std::string g_candidate_skin = "fluent";
 std::string g_candidate_window_preedit_style = "pinyin";
 bool g_candidate_fixed_badge = true;
 std::string g_candidate_fixed_badge_style = "paperclip";
+std::string g_candidate_ai_badge_style = "robot";
 std::string g_settings_window_linger = "off";
 std::string g_theme_mode = "system";
 std::string g_theme_settings = "follow";
@@ -279,6 +280,12 @@ bool IsValidCandidateSkinId(const std::string &skin)
 bool IsValidCandidateFixedBadgeStyle(const std::string &style)
 {
     return style == "paperclip" || style == "pushpin" || style == "dot";
+}
+
+// AI 联想徽标样式白名单，理由同上：存 "robot"/"whale" 而不是字面 emoji。
+bool IsValidCandidateAiBadgeStyle(const std::string &style)
+{
+    return style == "robot" || style == "whale";
 }
 
 bool IsValidSettingsWindowLinger(const std::string &linger)
@@ -701,6 +708,12 @@ bool LoadImeConfig()
             const std::string badge_style =
                 tbl["appearance"]["candidate_fixed_badge_style"].value_or(std::string("paperclip"));
             g_candidate_fixed_badge_style = IsValidCandidateFixedBadgeStyle(badge_style) ? badge_style : "paperclip";
+        }
+        {
+            // 同上：非法值回退到出厂 🤖，AI 候选不会因此失去来源标识
+            const std::string ai_badge_style =
+                tbl["appearance"]["candidate_ai_badge_style"].value_or(std::string("robot"));
+            g_candidate_ai_badge_style = IsValidCandidateAiBadgeStyle(ai_badge_style) ? ai_badge_style : "robot";
         }
         {
             const std::string linger = tbl["appearance"]["settings_window_linger"].value_or(std::string("off"));
