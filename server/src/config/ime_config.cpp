@@ -1,5 +1,6 @@
 #include "window/ui_backend_policy.h"
 #include "window/caret_state_indicator_policy.h"
+#include "window/candidate_view_model.h"
 #include "ime_config.h"
 #include "config/ime_config_internal.h"
 #include <Windows.h>
@@ -283,9 +284,10 @@ bool IsValidCandidateFixedBadgeStyle(const std::string &style)
 }
 
 // AI 联想徽标样式白名单，理由同上：存 "robot"/"whale" 而不是字面 emoji。
+// 直接查展示层的映射表，避免两份样式列表各自维护。
 bool IsValidCandidateAiBadgeStyle(const std::string &style)
 {
-    return style == "robot" || style == "whale";
+    return AiSuggestionBadgeGlyph(style) != nullptr;
 }
 
 bool IsValidSettingsWindowLinger(const std::string &linger)
