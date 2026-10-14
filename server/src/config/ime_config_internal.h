@@ -274,6 +274,7 @@ VoiceInputConfig SnapshotVoiceInput();
 std::string NormalizeSmallWindowUiBackend(const std::string &value);
 bool IsValidCandidateSkinId(const std::string &skin);
 bool IsValidCandidateFixedBadgeStyle(const std::string &style);
+bool IsValidCandidateAiBadgeStyle(const std::string &style);
 bool IsValidSettingsWindowLinger(const std::string &linger);
 bool IsValidTranslationTargetLanguage(const std::string &language);
 std::string AiAssistantTokenSlotKey(std::string_view provider);
