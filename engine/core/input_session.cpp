@@ -1102,7 +1102,17 @@ std::size_t InputSession::quantized_prefix_end() const
     // Floor to the last complete unit at or before the caret: an incomplete trailing unit
     // belongs to the pending suffix. boundaries always contains 0, so the boundary before
     // upper_bound always exists.
-    return *std::prev(std::upper_bound(boundaries.begin(), boundaries.end(), caret_position()));
+    const std::size_t floored = *std::prev(std::upper_bound(boundaries.begin(), boundaries.end(), caret_position()));
+    // A floor of 0 with the caret past the string head means the caret sits inside the FIRST
+    // unit, not at the true head. Report the whole string instead: prefix_end == 0 is reserved
+    // for caret == 0 (nothing typed before it), which the host uses to hide the candidate
+    // window (IsCaretPrefixEmpty). Without this the intra-first-unit caret would be mistaken
+    // for the string head and the window would vanish.
+    if (floored == 0 && caret_position() > 0)
+    {
+        return raw.size();
+    }
+    return floored;
 }
 
 std::size_t InputSession::prefix_end() const

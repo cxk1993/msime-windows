@@ -1725,6 +1725,9 @@ void run_caret_prefix_session_tests(const std::filesystem::path &data_directory)
                          "INSERT INTO tbl_1_s VALUES('shi','sh','是',100);");
         database.execute("CREATE TABLE tbl_1_j(key TEXT,jp TEXT,value TEXT,weight INTEGER);"
                          "INSERT INTO tbl_1_j VALUES('jie','j','接',100);");
+        database.execute("CREATE TABLE tbl_1_y(key TEXT,jp TEXT,value TEXT,weight INTEGER);"
+                         "INSERT INTO tbl_1_y VALUES('ya','y','呀',100);"
+                         "INSERT INTO tbl_1_y VALUES('ya','y','压',90);");
         database.execute("CREATE TABLE wubi86(key TEXT,value TEXT,weight INTEGER);"
                          "INSERT INTO wubi86 VALUES('aaaa','工',100);"
                          "INSERT INTO wubi86 VALUES('aaaa','或',50);");
@@ -1826,6 +1829,22 @@ void run_caret_prefix_session_tests(const std::filesystem::path &data_directory)
         require(same_word_list(session, full_words), "Unsetting the caret must restore the full-string decode");
     }
 
+    // 首单元内侧（多字母首音节）：floor 到 0 但 caret > 0，按整串解码而非空前缀，
+    // 候选窗不被 IsCaretPrefixEmpty 收起。
+    {
+        metasequoia::InputSession session(SchemeType::Quanpin, 0, true, true, false, paths);
+        type(session, "ya");
+        require(session.prefix_end() == 2 && !session.candidates().empty(),
+                "The unset 'ya' caret must decode the whole string");
+        const auto full_words = words_of(session);
+        session.set_caret(1);
+        session.recompute_candidates();
+        require(session.prefix_end() == 2 && session.pending_suffix().empty(),
+                "A caret inside the first unit must not be mistaken for the string head");
+        require(same_word_list(session, full_words) && same_word_list(session, quanpin_words("ya")),
+                "An intra-first-unit caret must decode exactly like the whole 'ya'");
+    }
+
     // pending_suffix 保留原始大小写：大写字母从光标处插入后原样留在后缀里。
     {
         metasequoia::InputSession session(SchemeType::Quanpin, 0, true, true, false, paths);
@@ -1861,7 +1880,7 @@ void run_caret_prefix_session_tests(const std::filesystem::path &data_directory)
     }
 
     // 双拼贪心配对（engine spec #187）：nihkb; → {0,2,4,6}、nihcb; → {0,2,3,5,6}，
-    // caret 落在段中间时同样 floor 到完整段边界。
+    // caret 落在段中间时同样 floor 到完整段边界；首单元内侧 floor 到 0 时退回整串解码。
     const auto shuangpin_words = [&](const std::string &typed) {
         metasequoia::InputSession other(SchemeType::Shuangpin, GetMicrosoftShuangpinProfile(), paths);
         type(other, typed);
@@ -1877,8 +1896,9 @@ void run_caret_prefix_session_tests(const std::filesystem::path &data_directory)
 
         session.set_caret(1);
         session.recompute_candidates();
-        require(session.candidates().empty() && session.prefix_end() == 0 && session.pending_suffix() == "nihkb;",
-                "A caret inside the first shuangpin unit must quantize to an empty prefix");
+        require(session.prefix_end() == 6 && session.pending_suffix().empty() &&
+                    same_word_list(session, shuangpin_words("nihkb;")),
+                "A caret inside the first shuangpin unit must fall back to the full-string decode");
 
         session.set_caret(3);
         session.recompute_candidates();
